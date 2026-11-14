@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>Saint Lague & D'Hondt Calculator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      line-height: 1.6;
+      margin: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 15px;
+      margin-bottom: 15px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      text-align: center;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    input[type="number"] {
+      width: 110px;
+      padding: 4px;
+      text-align: right;
+    }
+    .sainte-lague-res {
+      background-color: #FCC;
+      font-weight: bold;
+    }
+    .dhondt-res {
+      background-color: #EEF;
+    }
+    .diff-plus {
+      color: #d00;
+      font-weight: bold;
+    }
+    .diff-minus {
+      color: #00d;
+      font-weight: bold;
+    }
+    button {
+      padding: 8px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Saint Lague & D'Hondt Calculator</h1>
+<p>
+  2026年11月9日3党提案の<strong>修正サンラグ式（除数：1.4, 3, 5, 7...）</strong>と、現行の<strong>ドント式（除数：1, 2, 3, 4...）</strong>の比例代表議席数を同時に算出し比較するスクリプトです。<br>
+  対象エリアの議席数と、最大８政党の得票率ないし得票数を入れ算出ボタンを押してください。
+</p>
+
+<label><strong>対象エリアの議席数：</strong><input type="number" id="numTotal" min="1"></label>
+
+<table>
+  <thead>
+    <tr>
+      <th>政党</th>
+      <th>得票率% / 得票数</th>
+      <th>修正サンラグ式<br><small>(除数: 1.4, 3, 5...)</small></th>
+      <th>現行ドント式<br><small>(除数: 1, 2, 3...)</small></th>
+      <th>増減<br><small>(サンラグ - ドント)</small></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>政党A</td>
+      <td><input type="number" id="numA" step="any" min="0"></td>
+      <td class="sainte-lague-res"><output id="outA">-</output></td>
+      <td class="dhondt-res"><output id="dhondtA">-</output></td>
+      <td><output id="diffA">-</output></td>
+    </tr>
+    <tr>
+      <td>政党B</td>
+      <td><input type="number" id="numB" step="any" min="0"></td>
+      <td class="sainte-lague-res"><output id="outB">-</output></td>
+      <td class="dhondt-res"><output id="dhondtB">-</output></td>
+      <td><output id="diffB">-</output></td>
+    </tr>
+    <tr>
+      <td>政党C</td>
+      <td><input type="number" id="numC" step="any" min="0"></td>
+      <td class="sainte-lague-res"><output id="outC">-</output></td>
+      <td class="dhondt-res"><output id="dhondtC">-</output></td>
+      <td><output id="diffC">-</output></td>
+    </tr>
+    <tr>
+      <td>政党D</td>
+      <td><input type="number" id="numD" step="any" min="0"></td>
+      <td class="sainte-lague-res"><output id="outD">-</output></td>
+      <td class="dhondt-res"><output id="dhondtD">-</output></td>
+      <td><output id="diffD">-</output></td>
+    </tr>
+    <tr>
+      <td>政党E</td>
+      <td><input type="number" id="numE" step="any" min="0"></td>
+      <td class="sainte-lague-res"><output id="outE">-</output></td>
+      <td class="dhondt-res"><output id="dhondtE">-</output></td>
+      <td><output id="diffE">-</output></td>
+    </tr>
+    <tr>
+      <td>政党F</td>
+      <td><input type="number" id="numF" step="any" min="0"></td>
+      <td class="sainte-lague-res"><output id="outF">-</output></td>
+      <td class="dhondt-res"><output id="dhondtF">-</output></td>
+      <td><output id="diffF">-</output></td>
+    </tr>
+    <tr>
+      <td>政党G</td>
+      <td><input type="number" id="numG" step="any" min="0"></td>
+      <td class="sainte-lague-res"><output id="outG">-</output></td>
+      <td class="dhondt-res"><output id="dhondtG">-</output></td>
+      <td><output id="diffG">-</output></td>
+    </tr>
+    <tr>
+      <td>政党H</td>
+      <td><input type="number" id="numH" step="any" min="0"></td>
+      <td class="sainte-lague-res"><output id="outH">-</output></td>
+      <td class="dhondt-res"><output id="dhondtH">-</output></td>
+      <td><output id="diffH">-</output></td>
+    </tr>
+  </tbody>
+</table>
+
+<button type="button" id="calcBtn">算出ボタン</button>
+
+<script>
+  document.getElementById('calcBtn').addEventListener('click', function() {
+    const resSL = new Array(8).fill(0);
+    const resDH = new Array(8).fill(0);
+    const quotSL = new Array(8).fill(0);
+    const quotDH = new Array(8).fill(0);
+    const init = new Array(8).fill(0);
+    const partyIds = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+    // 対象エリアの総議席数を取得
+    const numCount = parseInt(document.getElementById('numTotal').value, 10);
+    if (isNaN(numCount) || numCount <= 0) {
+      alert("対象エリアの議席数に1以上の整数を入力してください。");
+      return;
+    }
+
+    // 各政党の得票を取得し、初期の商をセット
+    for (let i = 0; i < 8; i++) {
+      const id = partyIds.at(i);
+      let val = parseFloat(document.getElementById('num' + id).value);
+      if (isNaN(val) || val < 0) {
+        val = 0;
+      }
+      init.splice(i, 1, val);
+      quotSL.splice(i, 1, val / 1.4); // 修正サンラグ式の1議席目（÷1.4）
+      quotDH.splice(i, 1, val / 1.0); // 現行ドント式の1議席目（÷1）
+    }
+
+    // 1. 修正サンラグ式の議席配分
+    for (let s = 0; s < numCount; s++) {
+      let max = -1;
+      let maxi = -1;
+      for (let i = 0; i < 8; i++) {
+        if (init.at(i) > 0 && quotSL.at(i) > max) {
+          max = quotSL.at(i);
+          maxi = i;
+        }
+      }
+      if (maxi === -1) break;
+      const newSeats = resSL.at(maxi) + 1;
+      resSL.splice(maxi, 1, newSeats);
+      // 2議席目以降は 3, 5, 7... (2 * 議席数 + 1) で割る
+      quotSL.splice(maxi, 1, init.at(maxi) / (2 * newSeats + 1));
+    }
+
+    // 2. 現行ドント式の議席配分
+    for (let s = 0; s < numCount; s++) {
+      let max = -1;
+      let maxi = -1;
+      for (let i = 0; i < 8; i++) {
+        if (init.at(i) > 0 && quotDH.at(i) > max) {
+          max = quotDH.at(i);
+          maxi = i;
+        }
+      }
+      if (maxi === -1) break;
+      const newSeats = resDH.at(maxi) + 1;
+      resDH.splice(maxi, 1, newSeats);
+      // 次の議席は 2, 3, 4... (議席数 + 1) で割る
+      quotDH.splice(maxi, 1, init.at(maxi) / (newSeats + 1));
+    }
+
+    // 3. 結果と増減差を出力
+    for (let i = 0; i < 8; i++) {
+      const id = partyIds.at(i);
+      const slSeats = resSL.at(i);
+      const dhSeats = resDH.at(i);
+
+      document.getElementById('out' + id).textContent = slSeats + " 議席";
+      document.getElementById('dhondt' + id).textContent = dhSeats + " 議席";
+
+      const diff = slSeats - dhSeats;
+      const diffEl = document.getElementById('diff' + id);
+      diffEl.className = "";
+
+      if (diff > 0) {
+        diffEl.textContent = "+" + diff;
+        diffEl.className = "diff-plus";
+      } else if (diff < 0) {
+        diffEl.textContent = diff;
+        diffEl.className = "diff-minus";
+      } else {
+        diffEl.textContent = "±0";
+      }
+    }
+  });
+</script>
+</body>
+</html>
